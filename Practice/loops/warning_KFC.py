@@ -11,5 +11,9 @@ while i < 1000:
     elif load == 100:
         print(f"Нагрузка - {load}% ПОЗДРАВЛЯЮ, НАМ ПИЗДА!")
         break
+
+
     time.sleep(0.05)
     i += 1
+
+
