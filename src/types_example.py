@@ -17,6 +17,6 @@ x += 5
 class TypesExample:
     def __init__(self):
         self.nums = [1, 2, 3]
+
     def add(self, n):
         self.nums.append(n)
-

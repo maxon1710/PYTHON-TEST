@@ -8,4 +8,3 @@ class Lead:
 
 def change_name(lead, new_name):
     lead.name = new_name
-

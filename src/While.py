@@ -7,4 +7,3 @@ for num in numbers:
         max_value = num
 
 print("Максимальное число:", max_value)
-

@@ -1,5 +1,6 @@
 # src/list_example.py
 
+
 class ListExample:
     def __init__(self, items=None):
         """Конструктор принимает список. Если ничего не передано — создаёт пустой список."""

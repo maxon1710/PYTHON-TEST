@@ -4,6 +4,7 @@ class Student:
         self.age = age
         self.grades = grades
 
+
 def get_avg_grades(student):
     return sum(student.grades) / len(student.grades)
 
@@ -13,7 +14,7 @@ def describe_student(student):
         case Student(name="Max", age=_, grades=_):
             return "TOP student"
 
-        case Student(name=_, age=age, grades=_ ) if age < 20:
+        case Student(name=_, age=age, grades=_) if age < 20:
             return "Young student"
 
         case Student(name=_, age=_, grades=grades) if get_avg_grades(student) > 4.5:
@@ -21,6 +22,7 @@ def describe_student(student):
 
         case _:
             return "Normal"
+
 
 students = [
     Student("Max", 20, [5, 5, 4]),

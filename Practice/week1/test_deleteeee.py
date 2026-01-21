@@ -1,6 +1,5 @@
-
-
 import pytest
+
 
 def test_div_zero():
     print("Проверяем деление на 0")

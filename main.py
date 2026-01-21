@@ -1,9 +1,9 @@
-from src.DayWeek import day_of_week
-from src.StudentTest import Student, get_avg_grades
 from src.car_example import Car
+from src.DayWeek import day_of_week
 from src.lead_example import Lead
 from src.list_example import ListExample
-from src.types_example import TypesExample, my_list, my_dict
+from src.StudentTest import Student, get_avg_grades
+from src.types_example import TypesExample, my_dict, my_list
 
 
 def main():
