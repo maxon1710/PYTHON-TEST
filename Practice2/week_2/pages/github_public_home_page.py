@@ -1,5 +1,6 @@
 from playwright.sync_api import Page
 from .base_page import BasePage
+from .resources_menu import ResourcesMenu
 from .solutions_menu import SolutionsMenu
 
 
@@ -14,6 +15,11 @@ class GitHubPublicHomePage(BasePage):
             'button:has-text("Solutions")'
         )
 
+        # Кнопка Resources в хедере
+        self.resources_button = page.locator(
+            'button:has-text("Resources")'
+        )
+
     def open(self):
         """
         Открываем публичную главную GitHub
@@ -26,3 +32,10 @@ class GitHubPublicHomePage(BasePage):
         """
         self.solutions_button.hover()
         return SolutionsMenu(self.page)
+
+    def open_resources_menu(self):
+        """
+        Наводим мышь на Resources и возвращаем объект меню
+        """
+        self.resources_button.hover()
+        return ResourcesMenu(self.page)
