@@ -10,6 +10,3 @@ class BasePage:
     def open(self, url: str | None = None):
         target_url = url or self.url
         self.page.goto(target_url)
-
-
-
