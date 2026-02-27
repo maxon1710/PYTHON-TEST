@@ -1,8 +1,9 @@
 from week_2.pages.search_page import SearchPage
 
-def test_simple_search(browser):
-    page = SearchPage(browser)
-    page.open()
-    page.search("pytest selenium")
 
-    assert "pytest" in browser.title.lower()
+def test_simple_search(page):
+    search_page = SearchPage(page)
+    search_page.open()
+    search_page.search("pytest selenium")
+
+    assert "pytest" in page.title().lower()

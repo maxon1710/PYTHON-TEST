@@ -1,23 +1,44 @@
+import os
 import pytest
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 
 
-@pytest.fixture
-def browser():
-    options = Options()
-    options.add_argument("--start-maximized")
+@pytest.fixture(scope="session", autouse=True)
+def load_env():
+    base_dir = os.path.dirname(os.path.dirname(__file__))  # Practice2
+    env_path = os.path.join(base_dir, ".env")
+    load_dotenv(env_path)
 
-    # ❗️ вот это отключает плашку сохранения пароля
-    options.add_experimental_option("prefs", {
-        "credentials_enable_service": False,
-        "profile.password_manager_enabled": False,
-        "profile.default_content_setting_values.notifications": 2
-    })
 
-    service = Service()
-    driver = webdriver.Chrome(service=service, options=options)
 
-    yield driver
-    driver.quit()
+@pytest.fixture(scope="session")
+def github_creds():
+    user = os.getenv("GH_USER")
+    password = os.getenv("GH_PASS")
+
+    if not user or not password:
+        pytest.skip("GH_USER/GH_PASS not set in .env")
+
+    return {"user": user, "password": password}
+
+
+@pytest.fixture(scope="session")
+def testsite_creds():
+    user = os.getenv("TEST_USER")
+    password = os.getenv("TEST_PASS")
+
+    if not user or not password:
+        pytest.skip("TEST_USER/TEST_PASS not set in .env")
+
+    return {"user": user, "password": password}
+
+
+@pytest.fixture(scope="function")
+def page():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page()
+        page.set_viewport_size({"width": 1920, "height": 1080})
+        yield page
+        browser.close()

@@ -11,3 +11,8 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# env
+Practice2/.env
+.env
+.env.*

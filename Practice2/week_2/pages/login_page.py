@@ -1,7 +1,4 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
+from playwright.sync_api import expect
 from week_2.pages.base_page import BasePage
 
 
@@ -9,22 +6,19 @@ class LoginPage(BasePage):
 
     url = "https://the-internet.herokuapp.com/login"
 
-    username_input = (By.ID, "username")
-    password_input = (By.ID, "password")
-    login_button = (By.CSS_SELECTOR, "button[type='submit']")
-    logout_button = (By.CSS_SELECTOR, "a.button.secondary.radius")
-
-    def open(self):
-        self.browser.get(self.url)
+    # Playwright не использует By
+    username_input = "input#username"
+    password_input = "input#password"
+    login_button = "button[type='submit']"
+    logout_button = "a.button.secondary.radius"
 
     def login(self, username, password):
-        self.browser.find_element(*self.username_input).send_keys(username)
-        self.browser.find_element(*self.password_input).send_keys(password)
-        self.browser.find_element(*self.login_button).click()
+        self.page.fill(self.username_input, username)
+        self.page.fill(self.password_input, password)
+        self.page.click(self.login_button)
 
-        WebDriverWait(self.browser, 10).until(
-            EC.visibility_of_element_located(self.logout_button)
-        )
+        # ожидание, что кнопка Logout видна
+        expect(self.page.locator(self.logout_button)).to_be_visible()
 
     def is_logout_visible(self):
-        return self.browser.find_element(*self.logout_button).is_displayed()
+        return self.page.locator(self.logout_button).is_visible()

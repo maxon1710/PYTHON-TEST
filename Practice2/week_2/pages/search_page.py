@@ -1,16 +1,14 @@
-from selenium.webdriver.common.by import By
+from playwright.sync_api import Page
 
 
 class SearchPage:
-    SEARCH_INPUT = (By.NAME, "q")
-
-    def __init__(self, browser):
-        self.browser = browser
+    def __init__(self, page: Page):
+        self.page = page
+        self.search_input = page.locator("input[name='q']")
 
     def open(self):
-        self.browser.get("https://duckduckgo.com/")
+        self.page.goto("https://duckduckgo.com/")
 
-    def search(self, text):
-        search_input = self.browser.find_element(*self.SEARCH_INPUT)
-        search_input.send_keys(text)
-        search_input.submit()
+    def search(self, text: str):
+        self.search_input.fill(text)
+        self.search_input.press("Enter")
