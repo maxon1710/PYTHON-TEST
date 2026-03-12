@@ -13,6 +13,21 @@ __pycache__/
 Thumbs.db
 
 # env
-Practice2/.env
 .env
 .env.*
+
+# pytest
+.pytest_cache/
+
+# Playwright
+playwright-report/
+test-results/
+
+# coverage
+.coverage
+htmlcov/
+
+# screenshots / debug
+debug_*.png
+screenshots/
+*.png

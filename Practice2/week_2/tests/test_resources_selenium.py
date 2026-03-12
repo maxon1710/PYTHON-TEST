@@ -1,7 +1,10 @@
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+import pytest
 
+@pytest.mark.ui
+@pytest.mark.external
 def test_footer_resources():
     driver = webdriver.Chrome()
     driver.get("https://github.com/")

@@ -1,6 +1,8 @@
 import requests
 from pydantic import BaseModel
+import pytest
 
+pytestmark = [pytest.mark.api, pytest.mark.external]
 class UnknownResponse(BaseModel):
     page: int
     per_page: int

@@ -1,6 +1,7 @@
 import requests
 import pytest
 
+pytestmark = [pytest.mark.api, pytest.mark.external]
 
 @pytest.fixture()
 def obj_id():

@@ -1,5 +1,6 @@
 import requests
 from dataclasses import dataclass
+import pytest
 
 @dataclass
 class Meta:
@@ -22,7 +23,8 @@ class Cta:
     label: str
     url: str
 
-
+@pytest.mark.api
+@pytest.mark.external
 def test_login():
     headers = {
         "x-api-key": "reqres_295059538bc34e0c970e90805bc9b0ef"

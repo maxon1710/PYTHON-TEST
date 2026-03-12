@@ -1,6 +1,7 @@
-from itertools import count
-from typing import List
 
+import pytest
+
+pytestmark = [pytest.mark.api, pytest.mark.external]
 import requests
 from pydantic import BaseModel
 
