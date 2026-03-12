@@ -1,6 +1,7 @@
 from week_2.pages.github_about_page import AboutPage
+import pytest
 
-
+@pytest.mark.external
 def test_careers(page):
     about_page = AboutPage(page)
     about_page.open()
