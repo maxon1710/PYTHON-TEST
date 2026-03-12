@@ -41,9 +41,9 @@ jobs:
       - name: Run smoke tests
         run: |
           pytest -m "smoke and not external" \
-            --ignore=week_2/tests/api/test_API.py \
-            --ignore=week_2/tests/api/test_api_login.py \
-            --ignore=week_2/tests/api/test_api_unknown.py \
-            --ignore=week_2/tests/api/test_api_users.py \
-            --ignore=week_2/tests/ui/test_github_login.py \
-            --ignore=week_2/tests/ui/test_resources_selenium.py
+            --ignore=tests/api/test_API.py \
+            --ignore=tests/api/test_api_login.py \
+            --ignore=tests/api/test_api_unknown.py \
+            --ignore=tests/api/test_api_users.py \
+            --ignore=tests/ui/test_github_login.py \
+            --ignore=tests/ui/test_resources_selenium.py

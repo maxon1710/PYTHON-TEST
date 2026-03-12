@@ -43,6 +43,6 @@ jobs:
       - name: Run regression tests
         run: |
           pytest -m "regression and not external" \
-            --ignore=week_2/tests/api/test_api_login.py \
-            --ignore=week_2/tests/api/test_api_unknown.py \
-            --ignore=week_2/tests/api/test_api_users.py
+            --ignore=tests/api/test_api_login.py \
+            --ignore=tests/api/test_api_unknown.py \
+            --ignore=tests/api/test_api_users.py
