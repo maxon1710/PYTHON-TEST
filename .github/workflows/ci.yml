@@ -9,6 +9,7 @@ on:
     branches:
       - main
 
+
 jobs:
   smoke:
     name: Run smoke tests
