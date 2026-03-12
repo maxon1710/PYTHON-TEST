@@ -35,10 +35,20 @@ def testsite_creds():
 
 
 @pytest.fixture(scope="function")
-def page():
+def page(request):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        headless = request.config.getoption("--headless")
+        browser = p.chromium.launch(headless=headless)
         page = browser.new_page()
         page.set_viewport_size({"width": 1920, "height": 1080})
         yield page
         browser.close()
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="Run Playwright in headless mode.",
+    )
