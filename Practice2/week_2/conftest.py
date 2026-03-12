@@ -37,7 +37,10 @@ def testsite_creds():
 @pytest.fixture(scope="function")
 def page(request):
     with sync_playwright() as p:
-        headless = request.config.getoption("--headless")
+        cli_headless = request.config.getoption("--headless")
+        env_headless = os.getenv("HEADLESS", "false").lower() == "true"
+        headless = cli_headless or env_headless
+
         browser = p.chromium.launch(headless=headless)
         page = browser.new_page()
         page.set_viewport_size({"width": 1920, "height": 1080})
