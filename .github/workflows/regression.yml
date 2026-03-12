@@ -1,18 +1,11 @@
-name: CI
+name: Regression tests
 
 on:
-  push:
-    branches:
-      - main
-      - feature/**
-  pull_request:
-    branches:
-      - main
-
+  workflow_dispatch:
 
 jobs:
-  smoke:
-    name: Run smoke tests
+  regression:
+    name: Run regression tests
     runs-on: ubuntu-latest
 
     env:
@@ -39,12 +32,6 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install
 
-      - name: Run smoke tests
+      - name: Run regression tests
         run: |
-          pytest -m "smoke and not external" \
-            --ignore=week_2/tests/test_API.py \
-            --ignore=week_2/tests/test_api_login.py \
-            --ignore=week_2/tests/test_api_unknown.py \
-            --ignore=week_2/tests/test_api_users.py \
-            --ignore=week_2/tests/test_github_login.py \
-            --ignore=week_2/tests/test_resources_selenium.py
+          pytest -m "regression and not external"
