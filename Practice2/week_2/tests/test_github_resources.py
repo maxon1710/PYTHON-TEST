@@ -1,6 +1,8 @@
 from week_2.pages.github_public_home_page import GitHubPublicHomePage
+import pytest
 
-
+@pytest.mark.ui
+@pytest.mark.smoke
 def test_topics_in_resources_menu(page):
     home_page = GitHubPublicHomePage(page)   # создаём объект главной страницы GitHub
     home_page.open()                         # открываем https://github.com/

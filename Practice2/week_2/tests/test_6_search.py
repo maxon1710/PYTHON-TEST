@@ -1,7 +1,9 @@
 import pytest
 from week_2.pages.six_search import SixSearch
+import pytest
 
-
+@pytest.mark.ui
+@pytest.mark.smoke
 @pytest.mark.parametrize("query", ["qa", "aqa", "cars"])
 def test_six_search(page, query):
     six_search = SixSearch(page)

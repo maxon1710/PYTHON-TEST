@@ -10,10 +10,9 @@ on:
       - main
 
 jobs:
-  tests:
-    name: Run tests
+  smoke:
+    name: Run smoke tests
     runs-on: ubuntu-latest
-
 
     env:
       HEADLESS: true
@@ -39,9 +38,9 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install
 
-      - name: Run stable tests
+      - name: Run smoke tests
         run: |
-          pytest -m "not external" \
+          pytest -m "smoke and not external" \
             --ignore=week_2/tests/test_API.py \
             --ignore=week_2/tests/test_api_login.py \
             --ignore=week_2/tests/test_api_unknown.py \

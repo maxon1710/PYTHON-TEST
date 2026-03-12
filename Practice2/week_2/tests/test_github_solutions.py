@@ -1,8 +1,10 @@
 from week_2.pages.github_public_home_page import GitHubPublicHomePage
 from week_2.pages.cicd_page import CiCdPage
 from week_2.pages.contact_sales_page import ContactSalesPage
+import pytest
 
-
+@pytest.mark.regression
+@pytest.mark.ui
 def test_solutions_cicd_contact_sales_form(page):
     # --- GIVEN ---
     home_page = GitHubPublicHomePage(page)

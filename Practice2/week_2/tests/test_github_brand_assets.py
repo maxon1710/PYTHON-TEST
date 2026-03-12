@@ -1,6 +1,8 @@
 from week_2.pages.github_about_page import AboutPage
+import pytest
 
-
+@pytest.mark.ui
+@pytest.mark.smoke
 def test_brand_assets(page):
     about_page = AboutPage(page)   # создаём объект страницы About
     about_page.open()              # открываем https://github.com/about

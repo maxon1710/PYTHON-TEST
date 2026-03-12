@@ -1,13 +1,14 @@
 import random
 import string
-
+import pytest
 from week_2.pages.github_login_page import GitHubLoginPage
 
 # NOTE:
 # Негативный тест использует случайный username.
 # GitHub применяет anti-bot эвристики, возможна нестабильность теста.
 
-
+@pytest.mark.regression
+@pytest.mark.ui
 def generate_random_username(length: int = 14) -> str:
     """
     Генерирует случайный username из букв и цифр.

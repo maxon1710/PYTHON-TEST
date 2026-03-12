@@ -1,5 +1,8 @@
 from week_2.pages.login_page import LoginPage
+import pytest
 
+@pytest.mark.ui
+@pytest.mark.smoke
 
 def test_login_success(page):
     login_page = LoginPage(page)
