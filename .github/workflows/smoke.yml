@@ -41,9 +41,17 @@ jobs:
       - name: Run smoke tests
         run: |
           pytest -m "smoke and not external" \
+            --alluredir=allure-results \
             --ignore=tests/api/test_API.py \
             --ignore=tests/api/test_api_login.py \
             --ignore=tests/api/test_api_unknown.py \
             --ignore=tests/api/test_api_users.py \
             --ignore=tests/ui/test_github_login.py \
             --ignore=tests/ui/test_resources_selenium.py
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: Practice2/allure-results
