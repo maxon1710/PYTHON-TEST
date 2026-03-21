@@ -31,3 +31,7 @@ htmlcov/
 debug_*.png
 screenshots/
 *.png
+
+# .gitignore
+allure-results/
+allure-report/
