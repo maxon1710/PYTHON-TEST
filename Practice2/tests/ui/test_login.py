@@ -8,4 +8,4 @@ def test_login_success(page, testsite_creds):
     login_page.open()
     login_page.login(testsite_creds["user"], testsite_creds["password"])
 
-    assert not login_page.is_logout_visible()
+    assert login_page.is_logout_visible()
