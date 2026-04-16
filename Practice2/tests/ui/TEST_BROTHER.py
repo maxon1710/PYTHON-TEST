@@ -1,6 +1,12 @@
 import random
 import time
 from playwright.sync_api import sync_playwright
+import json
+from datetime import datetime
+import os
+
+RUN_ID = datetime.now().strftime("%Y%m%d_%H%M%S")
+os.makedirs("screens", exist_ok=True)
 
 # ─────────────────────────────────────────────
 # ТАБЛИЦА ТРАНСЛИТЕРАЦИИ
@@ -318,6 +324,14 @@ def human_type(locator, text):
         if random.random() > 0.85:
             time.sleep(random.uniform(0.3, 0.8))
 
+def safe_type(form, selector, text, label):
+    print(f"✍️  Печатаем {label}...")
+    field = form.locator(selector)
+    field.scroll_into_view_if_needed()
+    field.click()
+    time.sleep(random.uniform(0.3, 0.7))
+    human_type(field, text)
+    print(f"   ✅ {label} введён: {text}")
 
 # ─────────────────────────────────────────────
 # ОСНОВНОЙ СКРИПТ
@@ -340,163 +354,268 @@ with sync_playwright() as p:
     print(f"   Тема:       {color_scheme}")
     print(f"   UA:         {profile['user_agent'][:65]}...")
 
-    browser = p.chromium.launch(headless=False)
+    browser = None
+    try:
+        PROXIES = [
+            "31.59.20.176:6754",
+            "198.23.239.134:6540",
+            "45.38.107.97:6014",
+            "107.172.163.27:6543",
+            "198.105.121.200:6462",
+            "216.10.27.159:6837",
+            "142.111.67.146:5611",
+            "191.96.254.138:6185",
+            "31.58.9.4:6077",
+            "198.46.161.42:5092",
+        ]
+        PROXY_USER = "uxzmiktd"
+        PROXY_PASS = "g3ve5urzqszp"
 
-    context = browser.new_context(
-        viewport=profile["viewport"],
-        user_agent=profile["user_agent"],
-        device_scale_factor=profile["device_scale_factor"],
-        locale=locale,
-        timezone_id=tz,
-        color_scheme=color_scheme,
-    )
-    page = context.new_page()
+        import requests
+        random.shuffle(PROXIES)
+        MAX_RETRIES = 5
+        proxy = None
+        real_ip = "неизвестен"
+        ip_status = "не проверялся"
 
-    captured_request = {}
-
-
-    def handle_request(request):
-        if "price-order.php" in request.url:
-            captured_request["url"] = request.url
-            captured_request["post_data"] = request.post_data
-
-
-    def handle_response(response):
-        if "price-order.php" in response.url:
-            captured_request["status"] = response.status
+        for attempt in range(MAX_RETRIES):
+            candidate = PROXIES[attempt % len(PROXIES)]
+            print(f"🌍 Попытка {attempt + 1}/{MAX_RETRIES} — прокси: {candidate}")
             try:
-                captured_request["response"] = response.json()
-            except:
-                captured_request["response"] = response.text()
+                checked_ip = requests.get(
+                    "https://api.ipify.org",
+                    proxies={
+                        "http": f"http://{PROXY_USER}:{PROXY_PASS}@{candidate}",
+                        "https": f"http://{PROXY_USER}:{PROXY_PASS}@{candidate}"
+                    },
+                    timeout=10
+                ).text.strip()
+                proxy = candidate
+                real_ip = checked_ip
+                ip_status = "подтверждён"
+                print(f"✅ Прокси работает! IP: {real_ip}")
+                break
+            except Exception as e:
+                print(f"⚠️ Прокси {candidate} не работает: {e}")
+                ip_status = "проверка не удалась"
+
+        if proxy is None:
+            raise Exception(f"Все {MAX_RETRIES} прокси недоступны — невозможно продолжить")
+
+        browser = p.chromium.launch(
+            headless=True,
+            proxy={
+                "server": f"http://{proxy}",
+                "username": PROXY_USER,
+                "password": PROXY_PASS,
+            }
+        )
+
+        context = browser.new_context(
+            viewport=profile["viewport"],
+            user_agent=profile["user_agent"],
+            device_scale_factor=profile["device_scale_factor"],
+            locale=locale,
+            timezone_id=tz,
+            color_scheme=color_scheme,
+        )
+        page = context.new_page()
+
+        captured_request = {}
 
 
-    page.on("request", handle_request)
-    page.on("response", handle_response)
+        def handle_request(request):
+            if "price-order.php" in request.url:
+                captured_request["url"] = request.url
+                captured_request["post_data"] = request.post_data
 
 
-    # Скрываем признаки автоматизации:
-    # navigator.webdriver = undefined → у обычного Chrome это false/undefined
-    # chrome.runtime = {}             → у Playwright этого объекта нет по умолчанию
-    page.add_init_script("""
-        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-        window.navigator.chrome = { runtime: {} };
-    """)
+        def handle_response(response):
+            if "price-order.php" in response.url:
+                captured_request["status"] = response.status
+                try:
+                    captured_request["response"] = response.json()
+                except:
+                    captured_request["response"] = response.text()
 
-    print("\n🌐 Открываем сайт...")
-    page.goto("https://theheritage.ru/", wait_until="domcontentloaded")
 
-    # ── АВТОМАТИЧЕСКИЙ КЛИК ПО КАПЧЕ ────────────────────────────────────
-    # Antibot Cloud — внешняя капча до сайта.
-    # Находим единственную видимую кнопку — все кнопки зелёные,
-    # но только одна не имеет display:none, её и кликаем.
-    print("🤖 Ждём появления капчи Antibot Cloud...")
-    page.wait_for_selector("#content", timeout=10_000)
+        page.on("request", handle_request)
+        page.on("response", handle_response)
 
-    # Пауза — имитируем что человек читает страницу перед кликом
-    time.sleep(random.uniform(1.5, 3.5))
 
-    # Находим видимую кнопку и кликаем с движением мыши
-    captcha_btn = page.locator("#content div:visible").last
-    box = captcha_btn.bounding_box()
-    page.mouse.move(
-        box["x"] + box["width"] / 2,
-        box["y"] + box["height"] / 2
-    )
-    time.sleep(random.uniform(0.3, 0.7))
-    captcha_btn.click()
-    print("✅ Капча нажата, ждём загрузки сайта...")
+        # Скрываем признаки автоматизации:
+        # navigator.webdriver = undefined → у обычного Chrome это false/undefined
+        # chrome.runtime = {}             → у Playwright этого объекта нет по умолчанию
+        page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            window.navigator.chrome = { runtime: {} };
+        """)
 
-    # Ждём пока капча исчезнет и загрузится реальный сайт
-    page.wait_for_selector("form.order_f1", timeout=15_000)
-    print("✅ Форма найдена, начинаем заполнение...")
+        print("\n🌐 Открываем сайт...")
+        page.goto("https://theheritage.ru/", wait_until="domcontentloaded")
 
-    # Пауза — имитируем что человек читает страницу перед заполнением
-    pause = random.uniform(2.5, 5.0)
-    print(f"⏳ Пауза {pause:.1f}s (имитация чтения страницы)...")
-    time.sleep(pause)
+        # ── АВТОМАТИЧЕСКИЙ КЛИК ПО КАПЧЕ ────────────────────────────────────
+        # Antibot Cloud — внешняя капча до сайта.
+        # Находим единственную видимую кнопку — все кнопки зелёные,
+        # но только одна не имеет display:none, её и кликаем.
+        print("🤖 Ждём появления капчи Antibot Cloud...")
+        page.wait_for_selector("#content", timeout=10_000)
 
-    # ── ГЕНЕРАЦИЯ ДАННЫХ ─────────────────────────────────────────────────
-    # Имя генерируется первым — email строится на его основе
-    # чтобы имя и email были связаны между собой
-    name    = random_name()
-    phone   = random_phone()
-    email   = random_email(name)
-    picture = random_picture()
+        # Пауза — имитируем что человек читает страницу перед кликом
+        time.sleep(random.uniform(1.5, 3.5))
 
-    print("\n" + "=" * 50)
-    print("📋 ДАННЫЕ ДЛЯ ОТПРАВКИ:")
-    print(f"   Имя:     {name}")
-    print(f"   Телефон: {phone}")
-    print(f"   Email:   {email}")
-    print(f"   Картина: {picture}")
-    print("=" * 50 + "\n")
+        # Находим видимую кнопку и кликаем с движением мыши
+        captcha_btn = page.locator("#content div:visible").last
+        box = captcha_btn.bounding_box()
+        page.mouse.move(
+            box["x"] + box["width"] / 2,
+            box["y"] + box["height"] / 2
+        )
+        time.sleep(random.uniform(0.3, 0.7))
+        captcha_btn.click()
+        print("✅ Капча нажата, ждём загрузки сайта...")
 
-    # Берём первую форму — класс order_f1 только у неё
-    # На странице 3 одинаковые формы, order_f1 — самая верхняя
-    form = page.locator("form.order_f1")
+        # Ждём пока капча исчезнет и загрузится реальный сайт
+        page.wait_for_selector("form.order_f1", timeout=30_000)
+        print("✅ Форма найдена, начинаем заполнение...")
 
-    # ── ЗАПОЛНЕНИЕ ПОЛЕЙ ─────────────────────────────────────────────────
-    print("✍️  Печатаем имя...")
-    human_type(form.locator(".js-price-order-name"), name)
-    time.sleep(random.uniform(0.5, 1.2))
+        # Имитируем что человек изучает страницу — двигаем мышь и скроллим
+        print("🖱️  Изучаем страницу...")
+        vw = profile["viewport"]["width"]
+        vh = profile["viewport"]["height"]
 
-    print("✍️  Печатаем телефон...")
-    human_type(form.locator(".js-price-order-phone"), phone)
-    time.sleep(random.uniform(0.4, 1.0))
+        # Несколько плавных движений мыши по странице
+        for _ in range(random.randint(3, 6)):
+            x = random.randint(100, vw - 100)
+            y = random.randint(100, vh - 100)
+            page.mouse.move(x, y, steps=random.randint(10, 25))
+            time.sleep(random.uniform(0.3, 0.8))
 
-    print("✍️  Печатаем email...")
-    human_type(form.locator(".js-price-order-mail"), email)
-    time.sleep(random.uniform(0.5, 1.5))
+        # Скроллим вниз — читаем страницу
+        for _ in range(random.randint(2, 4)):
+            page.mouse.wheel(0, random.randint(150, 350))
+            time.sleep(random.uniform(0.4, 0.9))
 
-    print("✍️  Печатаем название картины...")
-    human_type(form.locator(".js-price-order-picture"), picture)
+        # Скроллим обратно наверх к форме
+        page.mouse.wheel(0, -random.randint(300, 600))
+        time.sleep(random.uniform(0.3, 0.6))
 
-    # Пауза перед сабмитом — человек "перечитывает" заполненную форму
-    pause = random.uniform(1.5, 3.5)
-    print(f"\n⏳ Пауза {pause:.1f}s перед отправкой (имитация проверки данных)...")
-    time.sleep(pause)
+        # Пауза — имитируем что человек читает страницу перед заполнением
+        pause = random.uniform(2.5, 5.0)
+        print(f"⏳ Пауза {pause:.1f}s (имитация чтения страницы)...")
+        time.sleep(pause)
 
-    # ── СКРИНШОТ ДО ОТПРАВКИ ─────────────────────────────────────────────
-    # Скроллим к форме чтобы она попала в кадр
-    form.locator(".js-price-order-name").scroll_into_view_if_needed()
-    print("📸 Скриншот заполненной формы (до отправки)...")
-    page.screenshot(path="before_submit.png")
-    print("   → Сохранён: before_submit.png")
+        # ── ГЕНЕРАЦИЯ ДАННЫХ ─────────────────────────────────────────────────
+        # Имя генерируется первым — email строится на его основе
+        # чтобы имя и email были связаны между собой
+        name    = random_name()
+        phone   = random_phone()
+        email   = random_email(name)
+        picture = random_picture()
 
-    # ── ОТПРАВКА ─────────────────────────────────────────────────────────
-    print("\n🖱️  Кликаем Submit...")
-    form.locator('input[type="submit"]').click()
+        print("\n" + "=" * 50)
+        print("📋 ДАННЫЕ ДЛЯ ОТПРАВКИ:")
+        print(f"   Имя:     {name}")
+        print(f"   Телефон: {phone}")
+        print(f"   Email:   {email}")
+        print(f"   Картина: {picture}")
+        print("=" * 50 + "\n")
 
-    # reCAPTCHA v3 (invisible) срабатывает в фоне автоматически —
-    # Google анализирует поведение браузера и выдаёт токен без виджета.
-    # Ждём зелёного текста "Спасибо! Ваша заявка отправлена."
-    print("⏳ Ждём подтверждения от сервера (до 15 сек)...")
-    success = form.locator(".js-price-order-thanks")
-    success.wait_for(state="visible", timeout=15_000)
+        # Берём первую форму — класс order_f1 только у неё
+        # На странице 3 одинаковые формы, order_f1 — самая верхняя
+        form = page.locator("form.order_f1")
 
-    # ── ИТОГОВЫЙ ЛОГ ─────────────────────────────────────────────────────
-    print("\n" + "=" * 50)
-    print("✅ ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА!")
-    print(f"   Имя:     {name}")
-    print(f"   Телефон: {phone}")
-    print(f"   Email:   {email}")
-    print(f"   Картина: {picture}")
-    print("-" * 50)
-    print(f"   Браузер: {profile['name']}")
-    print(f"   TZ:      {tz}")
-    print("=" * 50)
+        # ── ЗАПОЛНЕНИЕ ПОЛЕЙ ─────────────────────────────────────────────────
+        safe_type(form, ".js-price-order-name",    name,    "имя")
+        time.sleep(random.uniform(0.5, 1.2))
 
-    # Финальный скриншот — зелёное сообщение об успехе
-    print("📸 Скриншот с подтверждением (после отправки)...")
-    page.screenshot(path="after_submit.png")
-    print("   → Сохранён: after_submit.png\n")
+        safe_type(form, ".js-price-order-phone",   phone,   "телефон")
+        time.sleep(random.uniform(0.4, 1.0))
 
-    print("🏁 Тест завершён. Браузер закроется через 40 сек (или закрой сам)...")
+        safe_type(form, ".js-price-order-mail",    email,   "email")
+        time.sleep(random.uniform(0.5, 1.5))
 
-    import json
+        safe_type(form, ".js-price-order-picture", picture, "картину")
 
-    print("\n📡 ПЕРЕХВАЧЕННЫЙ ЗАПРОС:")
-    print(json.dumps(captured_request, ensure_ascii=False, indent=2))
+        # Пауза перед сабмитом — человек "перечитывает" заполненную форму
+        pause = random.uniform(1.5, 3.5)
+        print(f"\n⏳ Пауза {pause:.1f}s перед отправкой (имитация проверки данных)...")
+        time.sleep(pause)
 
-    browser.close()
-    print("🏁 Браузер закрыт.")
+        # ── СКРИНШОТ ДО ОТПРАВКИ ─────────────────────────────────────────────
+        # Скроллим к форме чтобы она попала в кадр
+        form.locator(".js-price-order-name").scroll_into_view_if_needed()
+        print("📸 Скриншот заполненной формы (до отправки)...")
+        before_path = f"screens/{RUN_ID}_before.png"
+        page.screenshot(path=before_path)
+        print(f"   → Сохранён: {before_path}")
+
+        # ── ОТПРАВКА ─────────────────────────────────────────────────────────
+        print("\n🖱️  Кликаем Submit...")
+        form.locator('input[type="submit"]').click()
+
+        # reCAPTCHA v3 (invisible) срабатывает в фоне автоматически —
+        # Google анализирует поведение браузера и выдаёт токен без виджета.
+        # Ждём зелёного текста "Спасибо! Ваша заявка отправлена."
+        print("⏳ Ждём подтверждения от сервера (до 15 сек)...")
+        success = form.locator(".js-price-order-thanks")
+        success.wait_for(state="attached", timeout=15_000)
+        thanks_text = success.inner_text()
+        print(f"   ✅ Ответ сервера: {thanks_text.strip()}")
+
+        # ── ИТОГОВЫЙ ЛОГ ─────────────────────────────────────────────────────
+        print("\n" + "=" * 50)
+        print("✅ ЗАЯВКА УСПЕШНО ОТПРАВЛЕНА!")
+        print(f"   Имя:     {name}")
+        print(f"   Телефон: {phone}")
+        print(f"   Email:   {email}")
+        print(f"   Картина: {picture}")
+        print("-" * 50)
+        print(f"   Браузер: {profile['name']}")
+        print(f"   TZ:      {tz}")
+        print("=" * 50)
+
+        # Финальный скриншот — зелёное сообщение об успехе
+        print("📸 Скриншот с подтверждением (после отправки)...")
+        after_path = f"screens/{RUN_ID}_after.png"
+        page.screenshot(path=after_path)
+        print(f"   → Сохранён: {after_path}\n")
+
+        thanks_visible = "Спасибо" in (success.inner_text() or "")
+        if thanks_visible or captured_request.get("response", {}).get("status") == "success":
+            picture_clean = picture.replace('«', '"').replace('»', '"')
+            result = (
+                f"✅ Заявка отправлена!\n\n"
+                f"👤 Имя: {name}\n"
+                f"📞 Телефон: {phone}\n"
+                f"📧 Email: {email}\n"
+                f"🎨 Картина: {picture_clean}\n\n"
+                f"🌐 Прокси IP: {real_ip}\n"
+                f"📡 Статус IP: {ip_status}"
+            )
+        else:
+            result = (
+                f"❌ Форма не отправила заявку\n\n"
+                f"👤 Имя: {name}\n"
+                f"📞 Телефон: {phone}\n"
+                f"📧 Email: {email}\n"
+                f"🎨 Картина: {picture}\n\n"
+                f"🌐 Прокси IP: {real_ip}\n"
+                f"📡 Статус IP: {ip_status}"
+            )
+
+        print(f"TGRESULT:{result}")
+
+    except Exception as e:
+        print(f"\n❌ ОШИБКА: {e}")
+        print(f"TGRESULT:❌ Скрипт упал с ошибкой:\n{str(e)[:200]}")
+        try:
+            crash_path = f"screens/{RUN_ID}_CRASH.png"
+            page.screenshot(path=crash_path)
+            print(f"   → Скрин падения сохранён: {crash_path}")
+        except:
+            print("   → Не удалось сделать скрин (браузер уже закрыт)")
+        raise
+    finally:
+        if browser:
+            browser.close()
